@@ -1,0 +1,54 @@
+---
+title: "About me"
+---
+
+I'm currently a Master’s student in Epidemiology at Johns Hopkins Bloomberg School of Public Health (JHSPH), and I hold a Bachelor’s degree in Dentistry (BDS) from CES University in Medellín, Colombia. 
+
+My work integrates research and clinical practice, focusing on the intersection of social and oral health epidemiology, including conditions like cleft lip and palate. While pursuing my degree, I also work as a research assistant, coordinating community-based HIV research projects in Latino populations. 
+
+I also serve as Vice President of the Latino Public Health Network student group and as Master's Co-Representative of the Epidemiology Student Organization (ESO) at JHSPH. 
+
+## Education
+
+**Johns Hopkins University** | Baltimore, MD
+
+Master of Science (ScM) in Epidemiology | August 2023 - May 2025
+
+Relevant coursework: Epidemiologic Methods, Biostatistics, Systematic Reviews and Meta-Analysis, Social Epidemiology and Health Equity, Global Health Economics and Economic Evaluation. 
+
+**CES University** | Medellin, Colombia
+
+Bachelor’s degree in Dentistry (BDS) | Jan 2017 - Man 2022
+
+## Research Experience
+
+**Johns Hopkins University, Baltimore, MD** | Teaching Assistant | July 2024 - Present
+
+**Johns Hopkins University, Baltimore, MD** | Research Assistant and Coordinator | April 2024 - Present  
+
+**University of Texas Health (UTHSCSA), San Antonio, TX** | Research Internship | April 2024 - Present
+
+## Clinical Experience
+
+**Dental Clinic Dontologica, Medellin, Colombia** | General dentist in a rural dental clinic | April 2022 – July 2023  
+
+**Dental Clinic Enlace Dental, Medellin, Colombia** | General dentist in private practice | Jan. 2022 – July 2023  
+
+**State Social Enterprise (ESE) San Rafael Hospital, Girardota, Colombia** | Internship in a rural state hospital | Sept. - Oct. 2021  
+
+## Publications
+
+1. Amaechi BT et al., Morphological and Elemental Evaluation of Investigative Mouthwashes to Repair 
+Acid-Eroded Tooth Surface. Clin Cosmet Investig Dent. 2023;15:1-11. 
+2. Amaechi BT et al., Investigation of the effects of Bipolar Radiofrequency Energy on the Structural 
+Morphology of Dental Plaque. Eur J Dent. 2023 May 12.  
+3. Amaechi, Bennett T et al. “Caries preventing efficacy of new Isomalt-containing mouthrinse 
+formulations: a microbial study.” BDJ open vol. 10,1 51. 18 Jun. 2024.
+
+## Skills
+
+- Leadership: Vice President of the Latino Public Health Network, JHSPH (2024) and Co-Masters Representative of the Epidemiology Student Organization, JHSPH (2024) 
+- Language skills: Spanish (native language), English (professional/second language), German (fluent) 
+- Technology skills: R/R Studio, Microsoft 365, Qualtrics, Github, Canva   
+- Membership: ECCO, Johns Hopkins University’s auditioned chamber choir 
+

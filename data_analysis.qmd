@@ -1,0 +1,433 @@
+---
+title: "Example analysis"
+bibliography: "references.bib"
+---
+
+
+Prior research has established a link between household food security and dental caries in the general U.S. population [@bahanan_2021]. However, there is a lack of evidence exploring this association within different ethnic groups, which may be exposed to different social determinants of health. I aim to analyze the association between household food security on dental caries— measured by the DMFT index—among the Hispanic adult population in the United States. The findings could help healthcare providers better understand the social factors contributing to dental caries in this population, leading to more targeted preventive strategies. Additionally, this research may inform policymakers, health program developers, and epidemiologists in creating social programs aimed at addressing food insecurity and advancing health equity.  
+
+::: {.column-margin}
+
+Data dictionaries:  
+
+[NHANES - Oral health questionnaire](https://wwwn.cdc.gov/Nchs/Nhanes/2017-2018/OHQ_J.htm)  
+
+[NHANES - Food security questionnaire](https://wwwn.cdc.gov/Nchs/Nhanes/2017-2018/FSQ_J.htm)  
+
+[NHANES - Demographics Data](https://wwwn.cdc.gov/Nchs/Nhanes/2017-2018/DEMO_J.htm)
+
+[NHANES - Oral health and dentition examination data](https://wwwn.cdc.gov/Nchs/Nhanes/2017-2018/OHXDEN_J.htm)
+
+:::
+
+
+Data for this data analysis is from the National Health and Nutrition Examination Survey (NHANES), a nationally representative survey conducted by the Centers for Disease Control and Prevention (CDC) and the National Center for Health Statistics (NCHS).  
+
+NHANES Sampling design: Image from @cdc_nhanes_nodate 
+```{r}
+#| fig-align: "left"
+#| fig-width: 300
+
+knitr::include_graphics("NHANES_sampling.png")
+
+```
+
+
+This study is based on the data from the 2017-2018 cycle @cdc_nhanes_nodate-1. Data was analyzed from the following questionnaires: Demographics, Oral Health, and Food Security; as well as the Oral Health and Dentition component from the examination section.
+
+
+# Data analysis
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(readr)
+library(tidyverse)
+library(haven)
+
+```
+
+## Creating the dataset
+
+Selection the NHANES data files and variables of interest
+
+```{r}
+demo <- read_xpt("DEMO_J.XPT")
+ohexam <- read_xpt("OHXDEN_J.XPT")
+foodsec <-read_xpt("FSQ_J.XPT")
+ohques <- read_xpt("OHQ_J.XPT")
+
+#demo: 9254 obs 46 variab
+
+#join all 3 datasets
+nhanes_data <- left_join(ohexam, demo, by = "SEQN")
+nhanes_data <- left_join(nhanes_data, foodsec, by = "SEQN")
+nhanes_data <- left_join(nhanes_data, ohques, by = "SEQN")
+#8366 obs with a complete dental examination
+
+#select variables: SEQN, 8 demo, 3 foodsec, 1 ohques, 56 ohexam, total 69
+nhanes_data <- nhanes_data %>%
+  select(SEQN, RIDAGEYR, RIAGENDR, DMDMARTL, DMDEDUC2, INDHHIN2, DMDHHSIZ, RIDRETH3, DMDCITZN, FSQ162, FSQ012, FSDHH, OHQ770, OHX02TC, OHX03TC, OHX04TC, OHX05TC, OHX06TC, OHX07TC, OHX08TC, OHX09TC, OHX10TC, OHX11TC, OHX12TC, OHX13TC, OHX14TC, OHX15TC, OHX18TC, OHX19TC, OHX20TC, OHX21TC, OHX22TC, OHX23TC, OHX24TC, OHX25TC, OHX26TC, OHX27TC, OHX28TC, OHX29TC, OHX30TC, OHX31TC,  OHX02CTC, OHX03CTC, OHX04CTC, OHX05CTC, OHX06CTC, OHX07CTC, OHX08CTC, OHX09CTC, OHX10CTC, OHX11CTC, OHX12CTC, OHX13CTC, OHX14CTC, OHX15CTC, OHX18CTC, OHX19CTC, OHX20CTC, OHX21CTC, OHX22CTC, OHX23CTC, OHX24CTC, OHX25CTC, OHX26CTC, OHX27CTC, OHX28CTC, OHX29CTC, OHX30CTC, OHX31CTC)
+
+```
+
+## Subsetting dataset 
+
+Population of interest: Hispanic adult population (18 years or olderm)
+
+```{r}
+
+#Race and ethnicity
+nhanes_data <-  nhanes_data %>%
+  mutate(RACETH = factor(RIDRETH3,
+                         levels = c(1, 2, 3, 4, 5, 6, 7), 
+                         labels = c("Mexican American", "Other Hispanic", "Non-Hispanic White", "Non-Hispanic Black", "Non-Hispanic", "Asian", "Other Race - Including Multi-Racial")))
+
+str(nhanes_data$RACETH)
+table(nhanes_data$RACETH) #we should have in total 1967 participants after subsetting the data
+
+subset_nhanes <- nhanes_data %>%
+  filter(RACETH %in% c("Mexican American", "Other Hispanic"))
+
+table(subset_nhanes$RACETH)
+
+#Age
+
+summary(nhanes_data$RIDAGEYR)
+subset_nhanes <- subset_nhanes %>%
+  filter(RIDAGEYR >= 18)
+
+summary(subset_nhanes$RIDAGEYR) #min age is 18, and it has 70 variables like nhanes_data
+
+```
+
+### Creating categories and new variables
+
+Primary exposure: food security
+
+::: {.callout-important}
+In this analysis, participants with missing values for the main exposure of interest (food security) were excluded.
+:::
+
+```{r}
+str(subset_nhanes$FSDHH)
+table(subset_nhanes$FSDHH)
+
+subset_nhanes <- subset_nhanes %>%
+  mutate(FOODSEC = case_when(
+    is.na(FSDHH) ~ NA_character_,  # Keep NAs
+    FSDHH %in% c(2, 3, 4) ~ "1",
+    FSDHH %in% c(1) ~ "0"
+  )) %>%
+  mutate(FOODSEC = factor(FOODSEC,
+                          levels = c("0", "1"),
+                          labels = c("Food secure", "Food insecure")))
+
+table(subset_nhanes$FOODSEC, useNA = "always")
+
+#Excluding all missing values
+
+subset_nhanes <- subset(subset_nhanes, !is.na(FOODSEC))
+```
+
+Covariates: Gender and oral health related
+
+```{r}
+
+#GENDER
+
+str(subset_nhanes$RIAGENDR)
+table(subset_nhanes$RIAGENDR)
+
+subset_nhanes <- subset_nhanes %>%
+  mutate(GENDER = ifelse(RIAGENDR == 1, 0,
+                         ifelse(RIAGENDR == 2, 1, NA))) %>%
+  mutate(GENDER = factor(GENDER,
+                         levels = c(0, 1),
+                         labels = c("Male", "Female")))
+
+table(subset_nhanes$GENDER)
+
+#Total teeth count per person
+
+subset_nhanes <- subset_nhanes %>%
+  mutate(
+    across(
+      c(OHX02TC, OHX03TC, OHX04TC, OHX05TC, OHX06TC, OHX07TC, OHX08TC, OHX09TC, OHX10TC, OHX11TC, OHX12TC, OHX13TC, OHX14TC, OHX15TC, OHX18TC, OHX19TC, OHX20TC, OHX21TC, OHX22TC, OHX23TC, OHX24TC, OHX25TC, OHX26TC, OHX27TC, OHX28TC, OHX29TC, OHX30TC, OHX31TC),
+      ~as.numeric(ifelse(. %in% c(1, 2), 1, ifelse(. %in% c(3, 4, 5, 9), 0, NA_character_)))
+    )
+  )
+
+subset_nhanes <- subset_nhanes %>%
+  rowwise() %>%
+  mutate(TOTALTEETH = sum(c(OHX02TC, OHX03TC, OHX04TC, OHX05TC, OHX06TC, OHX07TC, OHX08TC, OHX09TC, OHX10TC, OHX11TC, OHX12TC, OHX13TC, OHX14TC, OHX15TC, OHX18TC, OHX19TC, OHX20TC, OHX21TC, OHX22TC, OHX23TC, OHX24TC, OHX25TC, OHX26TC, OHX27TC, OHX28TC, OHX29TC, OHX30TC, OHX31TC))) %>%
+  select(-OHX02TC, -OHX03TC, -OHX04TC, -OHX05TC, -OHX06TC, -OHX07TC, -OHX08TC, -OHX09TC, -OHX10TC, -OHX11TC, -OHX12TC, -OHX13TC, -OHX14TC, -OHX15TC, -OHX18TC, -OHX19TC, -OHX20TC, -OHX21TC, -OHX22TC, -OHX23TC, -OHX24TC, -OHX25TC, -OHX26TC, -OHX27TC, -OHX28TC, -OHX29TC, -OHX30TC, -OHX31TC)
+
+str(subset_nhanes$TOTALTEETH)
+summary(subset_nhanes$TOTALTEETH)
+
+#Categorize into partial or complete edentulism
+
+subset_nhanes <- subset_nhanes %>%
+  mutate(EDENTULISM = case_when(
+    TOTALTEETH == 0 ~ "2",
+    TOTALTEETH >= 24 ~ "0",
+    TOTALTEETH > 1 & TOTALTEETH < 24 ~ "1",
+    TRUE ~ NA_character_
+  )) %>%
+  mutate(EDENTULISM = factor(EDENTULISM,
+                             levels = c("0", "1", "2"),
+                             labels = c("Dentate", "Partial edentulism", "Edentulism")))
+
+table(subset_nhanes$EDENTULISM)
+
+# Unmet dental care need in the last year
+
+subset_nhanes <- subset_nhanes %>%
+  mutate(UNMETDC = case_when(
+    is.na(OHQ770) ~ NA_character_,  # Keep NAs
+    OHQ770 %in% c(2) ~ "1",
+    OHQ770 %in% c(1) ~ "0",
+    OHQ770 %in% c(7,9) ~ NA
+  )) %>%
+  mutate(UNMETDC = factor(UNMETDC,
+                          levels = c("0", "1"),
+                          labels = c("No", "Yes")))
+
+
+prop.table(table(subset_nhanes$UNMETDC, useNA = "always"))
+
+```
+
+Covariates: other demographic variables
+
+```{r}
+# Citizenship status
+
+subset_nhanes <- subset_nhanes %>%
+  mutate(CITIZEN = case_when(
+   is.na(DMDCITZN) ~ NA_character_, 
+    DMDCITZN %in% c(2) ~ "1",
+    DMDCITZN %in% c(1) ~ "0",
+    DMDCITZN %in% c(7,9) ~ NA 
+  )) %>%
+  mutate(CITIZEN = factor(CITIZEN,
+                          levels = c("0", "1"),
+                          labels = c("No", "Yes")))
+
+table(subset_nhanes$CITIZEN, useNA = "always")
+
+# Marital status
+
+table(subset_nhanes$DMDMARTL, useNA = "always")
+
+subset_nhanes <- subset_nhanes %>%
+  mutate(MARITALST = case_when(
+    is.na(DMDMARTL) ~ NA_character_,
+    DMDMARTL %in% c(1,6) ~ "1",
+    DMDMARTL %in% c(2,3,4,5) ~"0"
+  )) %>%
+  mutate(MARITALST = factor(MARITALST,
+                            levels = c("0", "1"),
+                          labels = c("Single/Widowed/Divorced", "Married/Living with partner")))
+
+table(subset_nhanes$MARITALST, useNA = "always") #check NAs
+
+# Education 
+
+table(subset_nhanes$DMDEDUC2, useNA = "always")
+
+subset_nhanes <- subset_nhanes %>%
+  mutate(EDUC = case_when(
+    is.na(DMDEDUC2) ~ NA_character_,
+    DMDEDUC2 %in% c(4,5) ~ "1",
+    DMDEDUC2 %in% c(1,2,3) ~"0")) %>%
+  mutate(EDUC = factor(EDUC,
+                            levels = c("0", "1"),
+                          labels = c("High school or less", "More than high school")))
+
+table(subset_nhanes$EDUC, useNA = "always")
+
+#Annual family income
+
+table(subset_nhanes$INDHHIN2, useNA = "always")
+
+subset_nhanes <- subset_nhanes %>%
+  mutate(INCOME = case_when(
+   is.na(INDHHIN2) ~ NA_character_, 
+    INDHHIN2 %in% c(5,6,7,8,9,10,12,14,15) ~ "1",
+    INDHHIN2 %in% c(1,2,3,4,13) ~ "0",
+    INDHHIN2 %in% c(77,99) ~ NA 
+  )) %>%
+  mutate(INCOME = factor(INCOME,
+                          levels = c("0", "1"),
+                          labels = c("Under $20 000", "$20 000 and over")))
+
+table(subset_nhanes$INCOME, useNA = "always")
+
+# Household size
+
+prop.table(table(subset_nhanes$DMDHHSIZ, useNA = "always"))
+
+
+```
+
+## DMFT Index
+
+DMFT was calculated as the total count of codes E,F,J,P,R,T,Z in the ‘Coronal Caries: Tooth Count’ segment of the dental examination.
+
+::: {.callout-note}
+Edentulous participants were included in the dental caries experience analyses and assigned a DMFT of 28 (since the crown surface examination protocol excluded third molars)
+:::
+
+```{r}
+
+#Assign a value to 1 to the following letters
+subset_nhanes <- subset_nhanes %>%
+  mutate(
+    across(
+      starts_with("OHX"),
+      ~case_when(
+        str_detect(., "[EFJPRTZ]") ~ 1,
+        TRUE ~ 0)
+    ))
+
+#add the individual values from the OHX variables and then remove them
+subset_nhanes <- subset_nhanes %>%
+  mutate(DMFT = rowSums(across(starts_with("OHX"), ~. > 0))) %>%
+  select(-starts_with("OHX")) 
+
+summary(subset_nhanes$DMFT)
+str(subset_nhanes$DMFT)
+
+#Check that edentulous get a DMFT of 28
+
+subset_nhanes %>%
+  group_by(EDENTULISM) %>%
+  summarise(mean_DMFT = mean(DMFT, na.rm = TRUE))
+
+#this means that there are some edentulous that have a value lower than 28, so we need to assign a value of 28 to all edentulous participants
+
+subset_nhanes <- subset_nhanes %>%
+  mutate(DMFT = case_when(
+    EDENTULISM == "Edentulism" ~ 28,
+    TRUE ~ DMFT))
+
+subset_nhanes %>%
+  group_by(EDENTULISM) %>%
+  summarise(mean_DMFT = mean(DMFT, na.rm = TRUE))
+```
+
+### Distribution of the outcome
+
+```{r}
+#See distribution
+ggplot(data = subset_nhanes, aes(x = DMFT)) +
+  geom_bar(fill = "skyblue", color = "black") +
+  labs(x = "DMFT-D Index score", y = "Participants", 
+       title = "Distribution of DMFT Index score", 
+       subtitle =  "Analysis of a representative sample of the Hispanic population in the USA",
+       caption = "NHANES 2017-2018 Subsample")
+```
+
+### Exploring the relationship between age and DMFT
+
+```{r}
+ggplot(subset_nhanes, aes(x = RIDAGEYR, y = DMFT)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, color = "red") + 
+  labs(title = "Relationship between Age and DMFT by Gender",
+       subtitle = "Analysis of a representative sample of the Hispanic population in the USA",
+       x = "Age", 
+       y = "DMFT Index",
+       caption = "NHANES 2017-2018 Subsample") +
+  facet_wrap(~ GENDER) +
+  theme_bw()
+```
+
+### Relationship between outcome and primary exposure
+
+```{r}
+#boxplots for food security vs DMFT
+ggplot(subset_nhanes, aes(y=DMFT, x=FOODSEC)) +
+  geom_boxplot() +
+          labs(title = "DMFT Index by Food Security Category",
+               subtitle = "Analysis of a representative sample of the Hispanic population in the USA",
+               y = "DMFT index", 
+               caption = "NHANES 2017-2018 Subsample",
+               x="Food security category") +
+               ylim(0,28)+
+          theme_bw()+
+          theme(panel.grid.major = element_blank(), 
+                panel.grid.minor = element_blank(),
+                panel.background = element_blank(), 
+                plot.title = element_text(hjust = 0.5),
+                plot.caption = element_text(hjust = 0.5),
+                axis.ticks.x = element_blank())
+
+#crude results: mean(sd) DMFT per food security category
+
+crude_results <- subset_nhanes %>%
+  group_by(FOODSEC) %>%
+  summarise(meanDMFT = mean(DMFT),
+            sdDMFT = sd(DMFT)
+  )
+
+crude_results
+```
+
+
+## Negative binomial regression
+
+A good option because it's count data and it doesn't follow a normal distribution.
+
+```{r}
+
+library(MASS)
+
+# Fit negative binomial regression
+model1 <- glm.nb(DMFT ~ FOODSEC, data = subset_nhanes)
+
+summary(model1)
+exp(model1$coefficients)
+exp(confint(model1))
+#theta is 1.93 so there is overdispersion
+
+#Multiple negative binomial regression (adjusted model)
+model2 <- glm.nb(data = subset_nhanes, DMFT ~ FOODSEC + GENDER + CITIZEN + MARITALST + EDUC + INCOME + DMDHHSIZ + EDENTULISM + UNMETDC)
+
+summary(model2)
+exp(model2$coefficients)
+exp(confint(model2))
+
+```
+
+## Results  
+
+You must summarize your analysis and/or results with a paragraph (4-6 sentences).
+
+A total of 937 Hispanic participants with no missing data for the measured variables were included in the analysis, with 482 categorized as food secure and 455 as food insecure. 26% were partially dentate, and 4.3% were edentulous. The mean DMFT score was 10.9 for participants in food-secure households and 11.1 for those in food-insecure households. No statistically significant association was found between household food security level and DMFT score among Hispanic adult participants, either in the crude model (Prevalence ratio: 1.02, CI: 0.92-1.12) or in the model adjusted for sociodemographic and dental factors (Prevalence ratio: 0.98, CI: 0.90-1.07).
+
+### List of functions used in the data analysis:
+
+dplyr:   
+- left_join()  
+- select()  
+- mutate()  
+- filter()  
+- rowwise()  
+- summarise()  
+- case_when()  
+- across()  
+- group_by()  
+
+stringr:  
+- str_detect()  
+
+ggplot2  
+- ggplot()  
+- geom_bar()  
+- geom_boxplot()  
+- geom_point()
