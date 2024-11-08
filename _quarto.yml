@@ -7,8 +7,10 @@ website:
     left:
       - href: index.qmd
         text: Home
-      - about.qmd
-      - data_analysis.qmd
+      - href: about.qmd
+        text: About
+      - href: data_analysis.qmd
+        text: Example Analysis
 
 format:
   html:

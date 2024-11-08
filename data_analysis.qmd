@@ -1,7 +1,6 @@
 ---
 title: "Example analysis"
 bibliography: "references.bib"
-output: html_document
 ---
 
 
